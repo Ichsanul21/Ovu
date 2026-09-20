@@ -1,0 +1,1 @@
+{"name": "Ovu", "short_name": "Ovu", "description": "Tracking haid, kesuburan, dan kesehatan harian.", "start_url": "/dasbor", "scope": "/", "display": "standalone", "background_color": "#fff1f2", "theme_color": "#f43f5e", "lang": "id", "icons": [{"src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]}

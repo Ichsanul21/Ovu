@@ -2,14 +2,14 @@
 
 Aplikasi web PWA untuk tracking menstruasi, siklus kesuburan, pencatatan harian, dan analitik siklus. Gratis penuh, privacy-first, mobile-first.
 
-## Tech Stack (latest stable — Sep 2026)
+## Tech Stack (locked)
 
-- PHP 8.5.10 (min 8.4.25)
-- Laravel 13.31.0 (PHP 8.3–8.5)
+- PHP 8.3+ (dev di 8.3.30, prod anjuran 8.5.x)
+- Laravel 13.32.0 (PHP 8.3-8.5)
 - MySQL 8.4 LTS prod / SQLite dev
 - Nginx 1.30.5 stable prod
 - Tailwind CSS v4.3.3 + Alpine.js v3.16.3 + Chart.js v4.5.1
-- Push: webpush/webpush ^9.0 (VAPID) | PDF: barryvdh/laravel-dompdf ^3.0
+- Push: minishlink/web-push v11.0.0 (VAPID) | PDF: barryvdh/laravel-dompdf v3.1.2
 
 ## Full Feature
 
@@ -35,13 +35,15 @@ Aplikasi web PWA untuk tracking menstruasi, siklus kesuburan, pencatatan harian,
 ## Dev
 
 ```bash
-composer create-project laravel/laravel:^13.0 .
-npm i tailwindcss@4.3.3 alpinejs@3.16.3 chart.js@4.5.1
+composer install
+npm install
 cp .env.example .env
-# dev: DB_CONNECTION=sqlite
+# dev: DB_CONNECTION=sqlite (default)
 php artisan migrate
-npm run dev
+npm run build
 php artisan serve
+# test: php artisan test
+# vapid di server prod: php artisan ovu:vapid
 ```
 
-Prod (VPS): Nginx 1.30.5 + PHP 8.5 + MySQL 8.4 + SSL + `php artisan schedule:run` via cron + backup harian.
+Prod (VPS): Nginx 1.30.5 + PHP 8.3/8.5 + MySQL 8.4 + SSL + cron `php artisan schedule:run` tiap menit + backup harian.
