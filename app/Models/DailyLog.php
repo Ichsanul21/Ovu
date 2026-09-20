@@ -11,7 +11,7 @@ class DailyLog extends Model
         'user_id', 'log_date', 'bleeding', 'cramp', 'headache', 'breast_pain',
         'acne', 'nausea', 'mood', 'energy', 'sleep_hours', 'stress',
         'cervical_fluid', 'bbt', 'lh_test', 'testpack', 'intercourse',
-        'protected', 'weight_kg', 'symptoms', 'diary',
+        'protected', 'pill_taken', 'weight_kg', 'symptoms', 'diary',
     ];
 
     protected function casts(): array

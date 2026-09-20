@@ -1,24 +1,24 @@
 @extends('layouts.app')
-@section('title', 'Analitik Ovu')
+@section('title', 'Wawasan Ovu')
 @section('content')
-<h1 class="text-2xl font-bold text-rose-700">Analitik</h1>
-<p class="mt-1 text-sm text-stone-600">Rata-rata {{ $prediction['avg_cycle'] }} hari. Keyakinan {{ $prediction['confidence'] }}.</p>
-<div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-  <h2 class="font-semibold">Panjang siklus (hari)</h2>
-  <canvas id="cycleChart" class="mt-3 h-56 w-full"></canvas>
+<h1 class="text-xl font-bold">Wawasan</h1>
+<p class="mt-1 text-xs text-stone-500">Rata-rata {{ $prediction['avg_cycle'] }} hari . Keyakinan {{ $prediction['confidence'] }}.</p>
+<div class="mt-2 rounded-2xl bg-white p-4 shadow-sm">
+  <p class="text-sm font-semibold">Panjang siklus (hari)</p>
+  <canvas id="cycleChart" class="mt-2 h-48 w-full"></canvas>
 </div>
-<div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-  <h2 class="font-semibold">Energi dan kram 90 hari terakhir</h2>
-  <canvas id="symptomChart" class="mt-3 h-56 w-full"></canvas>
+<div class="mt-2 rounded-2xl bg-white p-4 shadow-sm">
+  <p class="text-sm font-semibold">Energi dan kram 90 hari terakhir</p>
+  <canvas id="symptomChart" class="mt-2 h-48 w-full"></canvas>
 </div>
-<div class="mt-4 space-y-3">
-  <h2 class="font-semibold text-rose-700">Insight pola</h2>
+<div class="mt-2 space-y-2">
   @foreach ($insights as $i)
-    <div class="rounded-2xl border p-4 text-sm shadow-sm {{ $i['level'] === 'waspada' ? 'border-amber-300 bg-amber-50' : 'border-rose-100 bg-white' }}">
-      <p class="font-semibold">{{ $i['title'] }}</p><p class="mt-1 text-stone-700">{{ $i['body'] }}</p>
+    <div class="rounded-2xl border p-3 text-sm shadow-sm {{ $i['level'] === 'waspada' ? 'border-amber-300 bg-amber-50' : 'border-rose-100 bg-white' }}">
+      <p class="font-semibold">{{ $i['title'] }}</p><p class="mt-0.5 text-stone-600">{{ $i['body'] }}</p>
     </div>
   @endforeach
 </div>
+<a href="{{ route('report') }}" class="mt-2 block rounded-2xl bg-rose-600 p-3 text-center text-sm font-semibold text-white">Laporan untuk dokter</a>
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
 <script>

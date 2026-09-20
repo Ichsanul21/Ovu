@@ -15,17 +15,23 @@ class ProfileController extends Controller
 
     public function storeOnboarding(Request $request): RedirectResponse
     {
-        $data = $this->validateProfile($request);
-        $data['user_id'] = $request->user()->id;
+        $data = $this->validateProfile($request, true);
+        $lastPeriod = $data['last_period'] ?? null;
+        unset($data['last_period']);
 
         $request->user()->profile()->updateOrCreate(
             ['user_id' => $request->user()->id],
             $data
         );
 
-        $this->refreshPrediction($request);
+        if ($lastPeriod && $request->user()->isWife()) {
+            \App\Models\Cycle::updateOrCreate(
+                ['user_id' => $request->user()->id, 'start_date' => $lastPeriod],
+                ['end_date' => \Carbon\Carbon::parse($lastPeriod)->addDays(max(0, ($data['typical_period_length'] ?? 5) - 1))->toDateString()]
+            );
+        }
 
-        return redirect()->route('cycles.index')->with('ok', 'Profil tersimpan. Sekarang masukkan riwayat haidmu ya.');
+        return redirect()->route('dashboard')->with('ok', 'Selamat datang di Ovu. Prediksi pertamamu sudah jadi.');
     }
 
     public function edit(Request $request): View
@@ -46,9 +52,9 @@ class ProfileController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function validateProfile(Request $request): array
+    private function validateProfile(Request $request, bool $wizard = false): array
     {
-        $validated = $request->validate([
+        $rules = [
             'full_name' => ['required', 'string', 'max:150'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'height_cm' => ['nullable', 'integer', 'min:100', 'max:250'],
@@ -59,8 +65,21 @@ class ProfileController extends Controller
             'routine_meds' => ['nullable', 'string', 'max:255'],
             'kb_history' => ['nullable', 'string', 'max:50'],
             'pregnancy_history' => ['nullable', 'string', 'max:100'],
-            'goal' => ['required', 'in:promil,kb,kesehatan'],
-        ]);
+            'goal' => ['required', 'in:promil,kb,kesehatan,hamil'],
+            'typical_cycle_length' => ['nullable', 'integer', 'min:21', 'max:45'],
+            'typical_period_length' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'is_teen' => ['nullable', 'boolean'],
+            'strip_days' => ['nullable', 'in:7,14'],
+            'visible_categories' => ['nullable', 'array'],
+            'kb_pill_time' => ['nullable', 'date_format:H:i'],
+            'kb_pill_active' => ['nullable', 'boolean'],
+        ];
+
+        if ($wizard) {
+            $rules['last_period'] = ['nullable', 'date', 'before_or_equal:today'];
+        }
+
+        $validated = $request->validate($rules);
 
         $conditions = $validated['conditions'] ?? [];
         if (! empty($validated['conditions_other'])) {
@@ -69,11 +88,12 @@ class ProfileController extends Controller
         unset($validated['conditions_other']);
         $validated['conditions'] = json_encode(array_values($conditions));
 
-        return $validated;
-    }
+        $validated['is_teen'] = (bool) ($validated['is_teen'] ?? false);
+        $validated['kb_pill_active'] = (bool) ($validated['kb_pill_active'] ?? false);
+        if (isset($validated['visible_categories'])) {
+            $validated['visible_categories'] = json_encode(array_values($validated['visible_categories']));
+        }
 
-    private function refreshPrediction(Request $request): void
-    {
-        app(\App\Services\CyclePredictor::class);
+        return $validated;
     }
 }

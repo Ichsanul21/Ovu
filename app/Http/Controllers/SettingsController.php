@@ -20,16 +20,36 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'goal' => ['nullable', 'in:promil,kb,kesehatan'],
+            'goal' => ['nullable', 'in:promil,kb,kesehatan,hamil'],
             'share_sensitive_with_partner' => ['nullable', 'boolean'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'strip_days' => ['nullable', 'in:7,14'],
+            'visible_categories' => ['nullable', 'array'],
+            'kb_pill_time' => ['nullable', 'date_format:H:i'],
+            'kb_pill_active' => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
         $user->update(['name' => $data['name']]);
 
-        if (! empty($data['goal']) && $user->profile) {
-            $user->profile->update(['goal' => $data['goal']]);
+        if ($user->profile) {
+            $profileData = [];
+            if (! empty($data['goal'])) {
+                $profileData['goal'] = $data['goal'];
+            }
+            if (! empty($data['strip_days'])) {
+                $profileData['strip_days'] = (int) $data['strip_days'];
+            }
+            if (isset($data['visible_categories'])) {
+                $profileData['visible_categories'] = json_encode(array_values($data['visible_categories']));
+            }
+            if (isset($data['kb_pill_time'])) {
+                $profileData['kb_pill_time'] = $data['kb_pill_time'];
+            }
+            $profileData['kb_pill_active'] = $request->boolean('kb_pill_active');
+            if (! empty($profileData)) {
+                $user->profile->update($profileData);
+            }
         }
 
         $user->update(['share_sensitive_with_partner' => $request->boolean('share_sensitive_with_partner')]);

@@ -1,6 +1,6 @@
 # Ovu — Tracking Menstruasi, Kesuburan & Kesehatan
 
-Aplikasi web PWA untuk tracking menstruasi, siklus kesuburan, pencatatan harian, dan analitik siklus. Gratis penuh, privacy-first, mobile-first.
+Aplikasi web PWA ala Flo untuk tracking menstruasi, ovulasi, kehamilan, dan kesehatan harian. Gratis penuh tanpa paywall, privacy-first, mobile-first, Bahasa Indonesia.
 
 ## Tech Stack (locked)
 
@@ -11,26 +11,26 @@ Aplikasi web PWA untuk tracking menstruasi, siklus kesuburan, pencatatan harian,
 - Tailwind CSS v4.3.3 + Alpine.js v3.16.3 + Chart.js v4.5.1
 - Push: minishlink/web-push v11.0.0 (VAPID) | PDF: barryvdh/laravel-dompdf v3.1.2
 
-## Full Feature
+## Fitur (remake ala Flo)
 
-1. Auth email+password, verifikasi email, 2 consent zero-use, Privasi & Syarat
-2. Profil: nama, tgl lahir (umur+zodiac), TB, BB + reminder bulanan, penyakit bawaan, obat, riwayat KB/hamil, tujuan promil/KB/kesehatan
-3. Impor historis haid (mulai–selesai) dari ingatan
-4. Kalender + dashboard status hari ini + hormone scope edukasi
-5. Log harian: darah, kram 1-5, mood, energi, tidur, lendir serviks, BBT, tes LH/testpack, intercourse, BB, diary
-6. Engine prediksi: moving avg 3–6 siklus, ovulasi, fertile window, confidence, flag telat
-7. Analytics: grafik siklus, pola gejala, BB vs siklus, akurasi, insight + disclaimer medis
-8. Push PWA generik (tanpa data sensitif di lockscreen)
-9. Sharing pasangan via kode invite 6 digit, view-only, bisa cabut
-10. Laporan dokter print/PDF
-11. Settings: export JSON/CSV, hapus akun total, PIN, log out semua perangkat
-12. PWA offline: form log antri → sync
+1. Onboarding wizard 5 langkah: tujuan, haid terakhir, siklus biasa, profil, kesehatan dasar
+2. Beranda: ring siklus SVG, hitung mundur ovulasi/haid, peluang hamil, strip 7/14 hari, tombol Catat Haid, cerita harian, kartu Asisten Ovu, widget Siklus Saya standar ACOG
+3. Katalog 71 gejala dalam 11 kategori + bottom sheet catat + toggle kategori per user
+4. Kalender konvensi Flo (merah solid/putus, teal subur/ovulasi, luteal gelap) + edit haid + navigasi 5 tahun
+5. Proyeksi rolling 5 tahun berjangkar data real: bergeser otomatis tiap ada haid baru
+6. Prediksi dari 1 data haid via angka siklus tipikal + confidence jujur
+7. Wawasan: grafik siklus dan gejala, pemeriksa pola PCOS/endometriosis, laporan dokter PDF
+8. 4 tujuan: pantau, promil, KB (bahasa eksplisit + pengingat pil harian), hamil (usia, HPL, checklist trimester)
+9. Mode remaja edukatif: bahasa aman, tanpa konten intim eksplisit
+10. Pasangan: explainer + kode undangan 24 jam + batas sensitif + cabut akses
+11. Kunci PIN aplikasi, push PWA generik (tanpa data sensitif di lockscreen), export JSON, hapus akun total
+12. PWA offline: form log antri lalu sync. Data di server per akun, ganti HP aman
 
 ## Privacy
 
-- Zero-use: data tidak dilatih ke AI, tidak dijual, tidak dibagikan tanpa izin eksplisit.
-- Owner-only by default. Akses pasangan/dokter hanya via undangan, bisa dicabut.
-- Tanpa tracker/iklan pihak-3. Password di-hash, HTTPS wajib.
+- Zero-use: tidak dilatih ke AI, tidak dijual, nol dibagikan ke pihak ketiga, tanpa tracker/iklan.
+- Owner-only default. Pasangan hanya via undangan, bisa dicabut.
+- Password hash, PIN opsional, HTTPS wajib.
 
 ## Dev
 
@@ -42,7 +42,7 @@ cp .env.example .env
 php artisan migrate
 npm run build
 php artisan serve
-# test: php artisan test
+# test: php artisan test (19 tests, 104 assertions)
 # vapid di server prod: php artisan ovu:vapid
 ```
 

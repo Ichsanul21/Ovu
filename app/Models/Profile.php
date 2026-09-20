@@ -10,6 +10,8 @@ class Profile extends Model
     protected $fillable = [
         'user_id', 'full_name', 'birth_date', 'height_cm', 'weight_kg',
         'conditions', 'routine_meds', 'kb_history', 'pregnancy_history', 'goal',
+        'typical_cycle_length', 'typical_period_length', 'is_teen', 'pregnancy_start',
+        'strip_days', 'visible_categories', 'kb_pill_time', 'kb_pill_active',
     ];
 
     protected function casts(): array
@@ -17,6 +19,9 @@ class Profile extends Model
         return [
             'birth_date' => 'date',
             'weight_kg' => 'decimal:2',
+            'is_teen' => 'boolean',
+            'pregnancy_start' => 'date',
+            'kb_pill_active' => 'boolean',
         ];
     }
 

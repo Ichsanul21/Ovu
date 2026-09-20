@@ -36,7 +36,15 @@ class CyclePredictor
         }
 
         $lastStart = $cycles->last()->start_date->copy()->startOfDay();
-        $avg = $lengths->isNotEmpty() ? round($lengths->avg(), 1) : 28.0;
+        $typical = (int) ($user->profile->typical_cycle_length ?? 28);
+        $typical = max(21, min(45, $typical));
+
+        if ($lengths->isNotEmpty()) {
+            $blended = ($lengths->sum() + $typical) / ($lengths->count() + 1);
+            $avg = round($blended, 1);
+        } else {
+            $avg = (float) $typical;
+        }
 
         $nextPeriod = $lastStart->copy()->addDays((int) round($avg));
         $ovulation = $nextPeriod->copy()->subDays(14);
@@ -60,6 +68,94 @@ class CyclePredictor
             'cycle_day' => $cycleDay,
             'count' => $cycles->count(),
         ];
+    }
+
+    /**
+     * Proyeksi rolling sampai 5 tahun ke depan, berjangkar tanggal haid asli terakhir.
+     * Tiap ada data real baru, jangkar pindah sehingga proyeksi selalu menyesuaikan.
+     *
+     * @return array<int, array{start: Carbon, ovulation: Carbon, fertile_start: Carbon, fertile_end: Carbon}>
+     */
+    public function project(User $user, int $years = 5): array
+    {
+        $cycles = $user->cycles()->orderBy('start_date')->get();
+
+        if ($cycles->isEmpty()) {
+            return [];
+        }
+
+        $result = $this->predict($user);
+        $avgDays = max(21, min(45, (int) round($result['avg_cycle'])));
+        $anchor = $cycles->last()->start_date->copy()->startOfDay();
+        $limit = $anchor->copy()->addYears($years);
+
+        $out = [];
+        $cursor = $anchor->copy();
+        while (true) {
+            $cursor = $cursor->copy()->addDays($avgDays);
+            if ($cursor->gt($limit) || count($out) >= 100) {
+                break;
+            }
+            $ovu = $cursor->copy()->subDays(14);
+            $out[] = [
+                'start' => $cursor->copy(),
+                'ovulation' => $ovu,
+                'fertile_start' => $ovu->copy()->subDays(5),
+                'fertile_end' => $ovu->copy()->addDay(),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** Peluang hamil hari ini: label dan persen ala Flo. */
+    public function pregnancyChance(?Carbon $today, ?Carbon $ovulation, ?Carbon $fertileStart, ?Carbon $fertileEnd): array
+    {
+        if (! $today || ! $ovulation || ! $fertileStart || ! $fertileEnd) {
+            return ['label' => 'Belum tahu', 'percent' => 0];
+        }
+
+        $d = $today->copy()->startOfDay()->diffInDays($ovulation->copy()->startOfDay(), false);
+
+        if ($d >= -1 && $d <= 1) {
+            return ['label' => 'Puncak', 'percent' => 32];
+        }
+
+        if ($today->between($fertileStart, $fertileEnd)) {
+            return ['label' => 'Tinggi', 'percent' => 24];
+        }
+
+        if ($d >= -5 && $d < -1) {
+            return ['label' => 'Sedang', 'percent' => 12];
+        }
+
+        return ['label' => 'Rendah', 'percent' => 3];
+    }
+
+    /** Hitung mundur: ke ovulasi dulu, sesudah ovulasi ke haid. */
+    public function countdown(?Carbon $today, ?Carbon $ovulation, ?Carbon $nextPeriod): array
+    {
+        if (! $today || ! $ovulation || ! $nextPeriod) {
+            return ['label' => 'Catat haid dulu yuk', 'days' => null, 'target' => null];
+        }
+
+        $today = $today->copy()->startOfDay();
+
+        if ($today->lte($ovulation)) {
+            $days = $today->diffInDays($ovulation);
+
+            return ['label' => $days === 0 ? 'Ovulasi hari ini' : "Ovulasi {$days} hari lagi", 'days' => $days, 'target' => 'ovulasi'];
+        }
+
+        if ($today->lte($nextPeriod)) {
+            $days = $today->diffInDays($nextPeriod);
+
+            return ['label' => $days === 0 ? 'Haid hari ini' : "Haid {$days} hari lagi", 'days' => $days, 'target' => 'haid'];
+        }
+
+        $late = $nextPeriod->diffInDays($today);
+
+        return ['label' => "Terlambat {$late} hari", 'days' => $late, 'target' => 'telat'];
     }
 
     public function phase(?int $cycleDay, float $avgCycle = 28): string

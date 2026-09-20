@@ -10,11 +10,15 @@ use Illuminate\Console\Command;
 
 class SendOvuReminders extends Command
 {
-    protected $signature = 'ovu:remind';
-    protected $description = 'Kirim pengingat haid, masa subur, keterlambatan, dan BB via push PWA';
+    protected $signature = 'ovu:remind {--pill : Hanya pengingat pil KB}';
+    protected $description = 'Kirim pengingat haid, masa subur, keterlambatan, BB, dan pil KB via push PWA';
 
     public function handle(CyclePredictor $predictor, PushService $push): int
     {
+        if ($this->option('pill')) {
+            return $this->pillReminders($push);
+        }
+
         $today = Carbon::today();
         $sent = 0;
 
@@ -52,6 +56,28 @@ class SendOvuReminders extends Command
         }
 
         $this->info("Reminder terkirim ke {$sent} subscription.");
+
+        return self::SUCCESS;
+    }
+
+    private function pillReminders(PushService $push): int
+    {
+        $now = Carbon::now()->format('H:i');
+        $today = Carbon::today()->toDateString();
+        $sent = 0;
+
+        $users = User::where('role', 'wife')->whereHas('profile', function ($q) use ($now) {
+            $q->where('kb_pill_active', true)->where('kb_pill_time', $now);
+        })->get();
+
+        foreach ($users as $user) {
+            $taken = $user->dailyLogs()->where('log_date', $today)->value('pill_taken');
+            if (! $taken) {
+                $sent += $push->sendToUser($user->id, 'Pengingat Ovu', 'Waktunya minum pil KB. Tandai di Beranda bila sudah.');
+            }
+        }
+
+        $this->info("Pengingat pil terkirim ke {$sent} subscription.");
 
         return self::SUCCESS;
     }

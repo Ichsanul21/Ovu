@@ -13,20 +13,25 @@ class CycleTipsService
     }
 
     /**
-     * Ambil tips untuk hari ke-N dengan penyesuaian tujuan.
-     * Tujuan: promil, kb, kesehatan.
+     * Ambil tips untuk hari ke-N dengan penyesuaian tujuan dan mode remaja.
+     * Tujuan: promil, kb, kesehatan, hamil.
      *
      * @return array{fase: string, kondisi: string, tips: array<int, string>}
      */
-    public function forDay(int $cycleDay, string $goal = 'kesehatan'): array
+    public function forDay(int $cycleDay, string $goal = 'kesehatan', bool $teen = false): array
     {
         $day = max(1, min(35, $cycleDay));
         $base = $this->tips[$day] ?? $this->tips[28];
 
         $tips = $base['tips'];
-        $intimacy = $this->intimacyTip($base['fase'], $goal);
-        if ($intimacy) {
-            $tips[] = $intimacy;
+
+        if ($teen) {
+            $tips[] = $this->teenNote($base['fase']);
+        } else {
+            $intimacy = $this->intimacyTip($base['fase'], $goal);
+            if ($intimacy) {
+                $tips[] = $intimacy;
+            }
         }
 
         return [
@@ -34,6 +39,16 @@ class CycleTipsService
             'kondisi' => $base['kondisi'],
             'tips' => $tips,
         ];
+    }
+
+    private function teenNote(string $fase): string
+    {
+        return match ($fase) {
+            'menstruasi' => 'Tahukah kamu: haid adalah cara tubuh melepas dinding rahim yang tidak dipakai. Ganti pembalut tiap 4 sampai 6 jam ya.',
+            'folikuler' => 'Tahukah kamu: setelah haid, tubuh mulai menyiapkan sel telur baru. Energi biasanya naik di fase ini.',
+            'ovulasi' => 'Tahukah kamu: ovulasi adalah saat sel telur dilepaskan. Bila ada yang membingungkan, tanyakan ke ibu, kakak, atau guru yang kamu percaya.',
+            default => 'Tahukah kamu: menjelang haid, mood naik turun itu normal karena hormon. Ceritakan perasaanmu ke orang terdekat.',
+        };
     }
 
     private function intimacyTip(string $fase, string $goal): ?string

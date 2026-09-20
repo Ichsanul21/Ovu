@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\CyclePredictor;
-use App\Services\InsightEngine;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,7 +21,13 @@ class CalendarController extends Controller
             $cursor = Carbon::today()->startOfMonth();
         }
 
+        $maxFuture = Carbon::today()->addYears(5)->startOfMonth();
+        if ($cursor->gt($maxFuture)) {
+            $cursor = $maxFuture->copy();
+        }
+
         $prediction = $predictor->predict($owner);
+        $projection = $predictor->project($owner, 5);
         $cycles = $owner->cycles()->orderBy('start_date')->get();
         $logs = $owner->dailyLogs()
             ->whereBetween('log_date', [$cursor->copy()->startOfMonth()->subDays(7), $cursor->copy()->endOfMonth()->addDays(7)])
@@ -34,11 +39,13 @@ class CalendarController extends Controller
 
         for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
             $key = $d->toDateString();
+            [$kind, $projected] = $this->classify($d, $cycles, $prediction, $projection);
             $cells[] = [
                 'date' => $d->copy(),
                 'in_month' => $d->month === $cursor->month,
                 'is_today' => $d->isToday(),
-                'kind' => $this->classify($d, $cycles, $prediction),
+                'kind' => $kind,
+                'projected' => $projected,
                 'has_log' => $logs->has($key),
             ];
         }
@@ -47,36 +54,57 @@ class CalendarController extends Controller
             'cursor' => $cursor,
             'cells' => $cells,
             'prediction' => $prediction,
+            'edit' => $request->boolean('edit'),
+            'maxFuture' => $maxFuture,
             'readonly' => ! $request->user()->isWife(),
         ]);
     }
 
-    /** @param \Illuminate\Support\Collection<int, \App\Models\Cycle> $cycles */
-    private function classify(Carbon $day, $cycles, array $prediction): string
+    /**
+     * Klasifikasi Flo: haid | prediksi_haid | ovulasi | subur | luteal | biasa.
+     *
+     * @return array{0: string, 1: bool}
+     */
+    private function classify(Carbon $day, $cycles, array $prediction, array $projection): array
     {
         foreach ($cycles as $cycle) {
             $start = $cycle->start_date;
             $end = $cycle->end_date ?? $start;
             if ($day->between($start, $end)) {
-                return 'haid';
+                return ['haid', false];
             }
         }
 
-        foreach (['next_period'] as $k) {
-            if (! empty($prediction[$k]) && $day->isSameDay($prediction[$k])) {
-                return 'prediksi_haid';
-            }
+        if (! empty($prediction['next_period']) && $day->isSameDay($prediction['next_period'])) {
+            return ['prediksi_haid', true];
         }
 
         if (! empty($prediction['ovulation_date']) && $day->isSameDay($prediction['ovulation_date'])) {
-            return 'ovulasi';
+            return ['ovulasi', true];
         }
 
         if (! empty($prediction['fertile_start']) && ! empty($prediction['fertile_end'])
             && $day->between($prediction['fertile_start'], $prediction['fertile_end'])) {
-            return 'subur';
+            return ['subur', true];
         }
 
-        return 'biasa';
+        if (! empty($prediction['next_period']) && ! empty($prediction['ovulation_date'])
+            && $day->gt($prediction['ovulation_date']) && $day->lt($prediction['next_period'])) {
+            return ['luteal', true];
+        }
+
+        foreach ($projection as $p) {
+            if ($day->isSameDay($p['start'])) {
+                return ['prediksi_haid', true];
+            }
+            if ($day->isSameDay($p['ovulation'])) {
+                return ['ovulasi', true];
+            }
+            if ($day->between($p['fertile_start'], $p['fertile_end'])) {
+                return ['subur', true];
+            }
+        }
+
+        return ['biasa', false];
     }
 }
